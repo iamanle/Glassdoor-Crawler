@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="MongoConfiguration">
+    <option name="serverConfigurations">
+      <list>
+        <ServerConfiguration>
+          <option name="connectOnIdeStartup" value="true" />
+          <option name="label" value="GDCrawler" />
+          <option name="password" value="bigData0123" />
+          <option name="serverUrls">
+            <list>
+              <option value="52.32.81.35:27017" />
+            </list>
+          </option>
+          <option name="username" value="root" />
+        </ServerConfiguration>
+      </list>
+    </option>
+  </component>
+</project>
