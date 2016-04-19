@@ -165,19 +165,25 @@ public class GDCrawler {
 
         switch (size.toLowerCase()){
             case "10000+ employees":
-                weight = 1;
+                weight = 1.4;
                 break;
             case "5001 to 10000 employees":
-                weight = 1.5;
+                weight = 5.3;
                 break;
             case "1001 to 5000 employees":
-                weight = 3;
+                weight = 11.8;
                 break;
             case "501 to 1000 employees":
-                weight = 4.5;
+                weight = 100.6;
                 break;
             case "201 to 500 employees":
-                weight = 6;
+                weight = 120.4;
+                break;
+            case "51 to 200 employees":
+                weight = 182.6;
+                break;
+            case "1 to 50 employees":
+                weight = 272;
                 break;
             default:
                 weight = 1;
