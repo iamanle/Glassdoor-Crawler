@@ -3,6 +3,7 @@ package gd.app;
 import com.google.gson.Gson;
 import com.mongodb.*;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.MongoIterable;
 import com.mongodb.util.JSON;
 import gd.gd.parser.Interview;
 import gd.gd.parser.Parser;
@@ -10,8 +11,10 @@ import gd.gd.parser.Review;
 import gd.model.*;
 import gd.util.Helper;
 import org.bson.Document;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.net.URLEncoder;
 import java.util.*;
 
 /**
@@ -26,11 +29,36 @@ public class GDCrawler {
         String apiSignature = "";
         String dbCredential = "";
 
-        List<String> employerIds = new ArrayList<>(Arrays.asList("391850"));
+        List<String> employerNames = new ArrayList<>(Arrays.asList("Tullett Prebon"));
 
-        for(String employerId : employerIds){
-            crawlAllAndSave(employerId, apiSignature, dbCredential, testMode);
+        for(String employerName: employerNames){
+            crawlAllAndSaveWithCompanyName(employerName, apiSignature, dbCredential, testMode);
         }
+    }
+
+    public static void crawlAllAndSaveWithCompanyName(String employerName,String apiSignature, String dbCredential, boolean testMode){
+        if(checkDup(employerName, dbCredential)) return;
+        String employerId = getCompanyId(employerName);
+        crawlAllAndSave(employerId,apiSignature,dbCredential,testMode);
+    }
+
+    private static String getCompanyId(String employerName) {
+        String url ="";
+        try{
+            url = "http://api.glassdoor.com/api/api.htm?t.p=61363&t.k=hjsbj6thhmA&userip=0.0.0.0&useragent=&format=json&v=1&action=employers&q="
+                    + URLEncoder.encode(employerName,"UTF-8");
+        }catch(Exception e){
+
+        }
+
+        System.out.println(url);
+        String jsonString = Helper.sendGet(url);
+        JSONObject json = new JSONObject(jsonString);
+        JSONObject responseObject = json.getJSONObject("response");
+
+        JSONArray employers = responseObject.getJSONArray("employers");
+        String id = ((JSONObject)employers.get(0)).get("id").toString();
+        return id;
     }
 
     public static void crawlAllAndSave(String employerId, String apiSignature, String dbCredential, boolean testMode){
@@ -130,7 +158,22 @@ public class GDCrawler {
         DBObject dbo = (DBObject) JSON.parse(jsonString);
         Document document = new Document(dbo.toMap());
         db.getCollection("uiContent").insertOne(document);
+    }
 
+    private static boolean checkDup(String companyName, String credential){
+        MongoClientURI uri = new MongoClientURI("mongodb://" + credential + "@52.32.81.35/?authSource=admin");
+        MongoClient mc = new MongoClient(uri);
+        MongoDatabase db = mc.getDatabase("glassdoor");
+
+        MongoIterable<String> collectionIterable = db.listCollectionNames();
+        for(String s : collectionIterable){
+            if (s.equals(companyName)){
+                System.out.println("There is duplication for " + companyName);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static List<Document> createTrainData(ContentList contentList){
