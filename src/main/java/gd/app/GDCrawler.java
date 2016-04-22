@@ -150,6 +150,14 @@ public class GDCrawler {
         MongoClient mc = new MongoClient(uri);
         MongoDatabase db = mc.getDatabase("glassdoor");
 
+        MongoIterable<String> collectionIterable = db.listCollectionNames();
+        for(String s : collectionIterable){
+            if (s.equals(contentList.getCompanyName())){
+                System.out.println("There is duplication for " + contentList.getCompanyName());
+                return;
+            }
+        }
+
         // Save as Train Data collection
         db.getCollection(contentList.getCompanyName()).insertMany(trainData);
 
