@@ -29,17 +29,30 @@ public class GDCrawler {
         String apiSignature = "";
         String dbCredential = "";
 
-        List<String> employerNames = new ArrayList<>(Arrays.asList("Tullett Prebon"));
+        List<String> employerNames = new ArrayList<>(Arrays.asList("Sumikin Busan"));
+        Set<String> failedToCrawl = new HashSet<>();
 
         for(String employerName: employerNames){
-            crawlAllAndSaveWithCompanyName(employerName, apiSignature, dbCredential, testMode);
+            crawlAllAndSaveWithCompanyName(employerName, apiSignature, dbCredential, testMode, failedToCrawl);
+        }
+
+        System.out.println("\n\n*****************************");
+        System.out.println("Failed to crawl:");
+        for(String s : failedToCrawl){
+            System.out.println(s);
         }
     }
 
-    public static void crawlAllAndSaveWithCompanyName(String employerName,String apiSignature, String dbCredential, boolean testMode){
-        if(checkDup(employerName, dbCredential)) return;
-        String employerId = getCompanyId(employerName);
-        crawlAllAndSave(employerId,apiSignature,dbCredential,testMode);
+    public static void crawlAllAndSaveWithCompanyName(String employerName,String apiSignature, String dbCredential, boolean testMode, Set<String> failedToCrawl){
+        try{
+            if(checkDup(employerName, dbCredential)) return;
+            String employerId = getCompanyId(employerName);
+            crawlAllAndSave(employerId,apiSignature,dbCredential,testMode);
+        }catch (Exception e){
+            System.out.println("FAILED to crawl " + employerName);
+            failedToCrawl.add(employerName);
+        }
+
     }
 
     private static String getCompanyId(String employerName) {
@@ -70,7 +83,12 @@ public class GDCrawler {
         ContentList contentList = Helper.contentToContentList(reviews, interviews, company);
         List<Document> trainData = createTrainData(contentList);
 
-        saveToMongoDB(contentList, trainData, dbCredential);
+        try{
+            saveToMongoDB(contentList, trainData, dbCredential);
+        }catch(Exception e){
+            System.out.println("FAILED to write to DB for " + company.getName());
+        }
+
     }
 
     /**
@@ -153,13 +171,15 @@ public class GDCrawler {
         MongoIterable<String> collectionIterable = db.listCollectionNames();
         for(String s : collectionIterable){
             if (s.equals(contentList.getCompanyName())){
-                System.out.println("There is duplication for " + contentList.getCompanyName());
+                System.out.println("There is a duplication for " + contentList.getCompanyName());
                 return;
             }
         }
 
         // Save as Train Data collection
-        db.getCollection(contentList.getCompanyName()).insertMany(trainData);
+        if(trainData.size() != 0){
+            db.getCollection(contentList.getCompanyName()).insertMany(trainData);
+        }
 
         // Save to UI content collection
         String jsonString = new Gson().toJson(contentList);
